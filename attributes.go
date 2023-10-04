@@ -82,7 +82,7 @@ func ValueToString(v slog.Value) string {
 	case slog.KindLogValuer:
 		return AnyValueToString(v)
 	case slog.KindGroup:
-		return fmt.Sprint(v)
+		return AnyValueToString(v)
 	case slog.KindInt64:
 		return fmt.Sprintf("%d", v.Int64())
 	case slog.KindUint64:
