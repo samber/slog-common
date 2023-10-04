@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strconv"
 )
 
 func AttrsToValue(attrs ...slog.Attr) map[string]any {
@@ -60,6 +61,33 @@ func AnyValueToString(v slog.Value) string {
 	}
 
 	return fmt.Sprintf("%+v", v.Any())
+}
+
+func ValueToString(v slog.Value) string {
+	switch v.Kind() {
+	case slog.KindAny:
+		return AnyValueToString(v)
+	case slog.KindLogValuer:
+		return AnyValueToString(v)
+	case slog.KindGroup:
+		return fmt.Sprint(v)
+	case slog.KindInt64:
+		return fmt.Sprintf("%d", v.Int64())
+	case slog.KindUint64:
+		return fmt.Sprintf("%d", v.Uint64())
+	case slog.KindFloat64:
+		return fmt.Sprintf("%f", v.Float64())
+	case slog.KindString:
+		return v.String()
+	case slog.KindBool:
+		return strconv.FormatBool(v.Bool())
+	case slog.KindDuration:
+		return v.Duration().String()
+	case slog.KindTime:
+		return v.Time().UTC().String()
+	default:
+		return AnyValueToString(v)
+	}
 }
 
 func FormatErrorKey(values map[string]any, errorKey string) map[string]any {
