@@ -63,6 +63,18 @@ func AnyValueToString(v slog.Value) string {
 	return fmt.Sprintf("%+v", v.Any())
 }
 
+func AttrsToString(attrs ...slog.Attr) map[string]string {
+	output := map[string]string{}
+
+	for i := range attrs {
+		attr := attrs[i]
+		k, v := attr.Key, attr.Value
+		output[k] = ValueToString(v)
+	}
+
+	return output
+}
+
 func ValueToString(v slog.Value) string {
 	switch v.Kind() {
 	case slog.KindAny:
