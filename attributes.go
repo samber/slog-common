@@ -106,18 +106,13 @@ func ValueToString(v slog.Value) string {
 	}
 }
 
-func FormatErrorKey(values map[string]any, errorKey string) map[string]any {
-	if err, ok := values["error"]; ok {
-		if e, ok := err.(error); ok {
-			values["error"] = FormatError(e)
-		}
-	} else if err, ok := values["err"]; ok {
-		if e, ok := err.(error); ok {
-			values["err"] = FormatError(e)
-		}
-	} else if err, ok := values[errorKey]; ok {
-		if e, ok := err.(error); ok {
-			values[errorKey] = FormatError(e)
+func FormatErrorKey(values map[string]any, errorKeys ...string) map[string]any {
+	for _, errorKey := range errorKeys {
+		if err, ok := values[errorKey]; ok {
+			if e, ok := err.(error); ok {
+				values[errorKey] = FormatError(e)
+				break
+			}
 		}
 	}
 
