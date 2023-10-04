@@ -4,8 +4,12 @@ import (
 	"encoding"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
+
+	"github.com/samber/lo"
 )
 
 func AttrsToValue(attrs ...slog.Attr) map[string]any {
@@ -126,4 +130,30 @@ func FormatError(err error) map[string]any {
 		"error": err.Error(),
 		"stack": nil, // @TODO
 	}
+}
+
+func FormatRequest(req *http.Request, ignoreHeaders bool) map[string]any {
+	output := map[string]any{
+		"host":   req.Host,
+		"method": req.Method,
+		"url": map[string]any{
+			"url":       req.URL.String(),
+			"scheme":    req.URL.Scheme,
+			"host":      req.URL.Host,
+			"path":      req.URL.Path,
+			"raw_query": req.URL.RawQuery,
+			"fragment":  req.URL.Fragment,
+			"query": lo.MapEntries(req.URL.Query(), func(key string, values []string) (string, string) {
+				return key, strings.Join(values, ",")
+			}),
+		},
+	}
+
+	if !ignoreHeaders {
+		output["headers"] = lo.MapEntries(req.Header, func(key string, values []string) (string, string) {
+			return key, strings.Join(values, ",")
+		})
+	}
+
+	return output
 }
