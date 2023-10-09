@@ -12,6 +12,26 @@ import (
 	"github.com/samber/lo"
 )
 
+type ReplaceAttrFn = func(groups []string, a slog.Attr) slog.Attr
+
+func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.Attr {
+	if fn == nil {
+		return attrs
+	}
+
+	for i := range attrs {
+		attr := attrs[i]
+		value := attr.Value.Resolve()
+		if value.Kind() == slog.KindGroup {
+			attr.Value = slog.GroupValue(ReplaceAttrs(fn, append(groups, attr.Key), value.Group()...)...)
+		} else {
+			attrs[i] = fn(groups, attr)
+		}
+	}
+
+	return attrs
+}
+
 func AttrsToValue(attrs ...slog.Attr) map[string]any {
 	log := map[string]any{}
 
