@@ -14,6 +14,15 @@ import (
 
 type ReplaceAttrFn = func(groups []string, a slog.Attr) slog.Attr
 
+func ConcatRecordAttrToAttr(attrs []slog.Attr, record *slog.Record) []slog.Attr {
+	output := append(attrs) // copy
+	record.Attrs(func(attr slog.Attr) bool {
+		output = append(output, attr)
+		return true
+	})
+	return output
+}
+
 func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.Attr {
 	if fn == nil {
 		return attrs
