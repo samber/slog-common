@@ -1,5 +1,5 @@
 
-# slog toolchain
+# Nothing to see here
 
 [![tag](https://img.shields.io/github/tag/samber/slog-common.svg)](https://github.com/samber/slog-common/releases)
 ![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-%23007d9c)
@@ -12,7 +12,7 @@
 
 A toolchain for [slog](https://pkg.go.dev/log/slog) Go library.
 
-**See also:**
+This project gathers common functions for my [slog](https://pkg.go.dev/log/slog) Go libraries:
 
 - [slog-multi](https://github.com/samber/slog-multi): `slog.Handler` chaining, fanout, routing, failover, load balancing...
 - [slog-formatter](https://github.com/samber/slog-formatter): `slog` attribute formatting
@@ -38,39 +38,6 @@ A toolchain for [slog](https://pkg.go.dev/log/slog) Go library.
 - [slog-zap](https://github.com/samber/slog-zap): A `slog` handler for `Zap`
 - [slog-zerolog](https://github.com/samber/slog-zerolog): A `slog` handler for `Zerolog`
 - [slog-logrus](https://github.com/samber/slog-logrus): A `slog` handler for `Logrus`
-
-## 🚀 Install
-
-```sh
-go get github.com/samber/slog-common
-```
-
-**Compatibility**: go >= 1.21
-
-No breaking changes will be made to exported APIs before v2.0.0.
-
-## 💡 Usage
-
-GoDoc: [https://pkg.go.dev/github.com/samber/slog-common](https://pkg.go.dev/github.com/samber/slog-common)
-
-```go
-m := AttrsToValue(slog.Bool("foo", true), slog.String("bar", "baz"))
-// {"foo": true, "bar": "baz"}
-
-k, v := AttrToValue(slog.Bool("foo", true))
-// "foo", true
-
-v := AnyValueToString(slog.IntValue(42))
-// "42"
-
-err := fmt.Errorf("an error")
-
-m := FormatErrorKey(map[string]any{"foo": "bar", "msg": err}, "msg")
-// {"foo": "bar", "msg": {"kind": "*errorString", "error": "an error", "stack": nil}}
-
-m := FormatError(err)
-// {"kind": "*errorString", "error": "an error", "stack": nil}
-```
 
 ## 🤝 Contributing
 

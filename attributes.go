@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -180,4 +181,17 @@ func FormatRequest(req *http.Request, ignoreHeaders bool) map[string]any {
 	}
 
 	return output
+}
+
+func Source(sourceKey string, r *slog.Record) slog.Attr {
+	fs := runtime.CallersFrames([]uintptr{r.PC})
+	f, _ := fs.Next()
+	return slog.Any(
+		sourceKey,
+		&slog.Source{
+			Function: f.Function,
+			File:     f.File,
+			Line:     f.Line,
+		},
+	)
 }
