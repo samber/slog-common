@@ -99,3 +99,31 @@ func TestReplaceAttrs(t *testing.T) {
 		),
 	)
 }
+
+func TestAttrsToMap(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// simple
+	is.EqualValues(
+		map[string]any{"key": "value"},
+		AttrsToMap(slog.Any("key", "value")),
+	)
+
+	// nested
+	is.EqualValues(
+		map[string]any{"key": "value", "key1": map[string]any{"key2": "value2"}},
+		AttrsToMap(slog.Any("key", "value"), slog.Group("key1", slog.Any("key2", "value2"))),
+	)
+
+	// merge
+	is.EqualValues(
+		map[string]any{"key": "value", "key1": map[string]any{"key2": "value2", "key3": "value3"}},
+		AttrsToMap(
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		),
+	)
+
+}

@@ -15,12 +15,18 @@ import (
 
 type ReplaceAttrFn = func(groups []string, a slog.Attr) slog.Attr
 
-func ConcatRecordAttrToAttr(attrs []slog.Attr, record *slog.Record) []slog.Attr {
+func AppendRecordAttrsToAttrs(attrs []slog.Attr, groups []string, record *slog.Record) []slog.Attr {
 	output := append(attrs) // copy
+
+	groups = reverse(groups)
 	record.Attrs(func(attr slog.Attr) bool {
+		for i := range groups {
+			attr = slog.Group(groups[i], attr)
+		}
 		output = append(output, attr)
 		return true
 	})
+
 	return output
 }
 
@@ -42,15 +48,62 @@ func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.
 	return attrs
 }
 
-func AttrsToValue(attrs ...slog.Attr) map[string]any {
-	log := map[string]any{}
+func AttrsToMap(attrs ...slog.Attr) map[string]any {
+	output := map[string]any{}
 
-	for i := range attrs {
-		k, v := AttrToValue(attrs[i])
-		log[k] = v
+	attrsByKey := groupValuesByKey(attrs)
+	for k, values := range attrsByKey {
+		v := mergeAttrValues(values...)
+		if v.Kind() == slog.KindGroup {
+			output[k] = AttrsToMap(v.Group()...)
+		} else {
+			output[k] = v.Any()
+		}
 	}
 
-	return log
+	return output
+}
+
+func groupValuesByKey(attrs []slog.Attr) map[string][]slog.Value {
+	result := map[string][]slog.Value{}
+
+	for _, item := range attrs {
+		key := item.Key
+		result[key] = append(result[key], item.Value)
+	}
+
+	return result
+}
+
+func mergeAttrValues(values ...slog.Value) slog.Value {
+	v := values[0]
+
+	for i := 1; i < len(values); i++ {
+		if v.Kind() != slog.KindGroup || values[i].Kind() != slog.KindGroup {
+			v = values[i]
+			continue
+		}
+
+		v = slog.GroupValue(append(v.Group(), values[i].Group()...)...)
+	}
+
+	return v
+}
+
+func mergeNestedMap(m1, m2 map[string]any) map[string]any {
+	for k, v1 := range m1 {
+		if v1, ok := v1.(map[string]any); ok {
+			if v2, ok := m1[k]; ok {
+				if v2, ok := v2.(map[string]any); ok {
+					m1[k] = mergeNestedMap(v2, v1)
+					continue
+				}
+			}
+		}
+		m1[k] = v1
+	}
+
+	return m1
 }
 
 func AttrToValue(attr slog.Attr) (string, any) {
@@ -64,7 +117,7 @@ func AttrToValue(attr slog.Attr) (string, any) {
 	case slog.KindLogValuer:
 		return k, v.Any()
 	case slog.KindGroup:
-		return k, AttrsToValue(v.Group()...)
+		return k, AttrsToMap(v.Group()...)
 	case slog.KindInt64:
 		return k, v.Int64()
 	case slog.KindUint64:
