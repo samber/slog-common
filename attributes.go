@@ -251,3 +251,9 @@ func Source(sourceKey string, r *slog.Record) slog.Attr {
 		},
 	)
 }
+
+func StringSource(sourceKey string, r *slog.Record) slog.Attr {
+	fs := runtime.CallersFrames([]uintptr{r.PC})
+	f, _ := fs.Next()
+	return slog.String(sourceKey, fmt.Sprintf("%s:%d (%s)", f.File, f.Line, f.Function))
+}
