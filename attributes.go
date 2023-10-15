@@ -90,22 +90,6 @@ func mergeAttrValues(values ...slog.Value) slog.Value {
 	return v
 }
 
-func mergeNestedMap(m1, m2 map[string]any) map[string]any {
-	for k, v1 := range m1 {
-		if v1, ok := v1.(map[string]any); ok {
-			if v2, ok := m1[k]; ok {
-				if v2, ok := v2.(map[string]any); ok {
-					m1[k] = mergeNestedMap(v2, v1)
-					continue
-				}
-			}
-		}
-		m1[k] = v1
-	}
-
-	return m1
-}
-
 func AttrToValue(attr slog.Attr) (string, any) {
 	k := attr.Key
 	v := attr.Value
@@ -187,6 +171,24 @@ func ValueToString(v slog.Value) string {
 	default:
 		return AnyValueToString(v)
 	}
+}
+
+func ReplaceError(attrs []slog.Attr, errorKeys ...string) []slog.Attr {
+	replaceAttr := func(groups []string, a slog.Attr) slog.Attr {
+		if len(groups) > 1 {
+			return a
+		}
+
+		for i := range errorKeys {
+			if a.Key == errorKeys[i] {
+				if err, ok := a.Value.Any().(error); ok {
+					return slog.Any(a.Key, FormatError(err))
+				}
+			}
+		}
+		return a
+	}
+	return ReplaceAttrs(replaceAttr, []string{}, attrs...)
 }
 
 func FormatErrorKey(values map[string]any, errorKeys ...string) map[string]any {
