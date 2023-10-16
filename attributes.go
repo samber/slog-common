@@ -251,3 +251,34 @@ func Source(sourceKey string, r *slog.Record) slog.Attr {
 		},
 	)
 }
+
+func StringSource(sourceKey string, r *slog.Record) slog.Attr {
+	fs := runtime.CallersFrames([]uintptr{r.PC})
+	f, _ := fs.Next()
+	return slog.String(sourceKey, fmt.Sprintf("%s:%d (%s)", f.File, f.Line, f.Function))
+}
+
+func FindAttribute(attrs []slog.Attr, groups []string, key string) (slog.Attr, bool) {
+	// group traversal
+	if len(groups) > 0 {
+		for _, attr := range attrs {
+			if attr.Value.Kind() == slog.KindGroup && attr.Key == groups[0] {
+				attr, found := FindAttribute(attr.Value.Group(), groups[1:], key)
+				if found {
+					return attr, true
+				}
+			}
+		}
+
+		return slog.Attr{}, false
+	}
+
+	// starting here, groups is empty
+	for _, attr := range attrs {
+		if attr.Key == key {
+			return attr, true
+		}
+	}
+
+	return slog.Attr{}, false
+}
