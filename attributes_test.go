@@ -127,3 +127,98 @@ func TestAttrsToMap(t *testing.T) {
 	)
 
 }
+
+func TestFindAttribute(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// simple
+	attr, ok := FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+		},
+		[]string{},
+		"key1",
+	)
+	is.True(ok)
+	is.EqualValues(slog.Group("key1", slog.Any("key2", "value2")), attr)
+
+	// return first
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{},
+		"key1",
+	)
+	is.True(ok)
+	is.EqualValues(slog.Group("key1", slog.Any("key2", "value2")), attr)
+
+	// not found
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{},
+		"key2",
+	)
+	is.False(ok)
+	is.EqualValues(slog.Attr{}, attr)
+
+	// nested
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{"key1"},
+		"key2",
+	)
+	is.True(ok)
+	is.EqualValues(slog.Any("key2", "value2"), attr)
+
+	// nested second
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{"key1"},
+		"key3",
+	)
+	is.True(ok)
+	is.EqualValues(slog.Any("key3", "value3"), attr)
+
+	// too nested
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{"key1", "key2"},
+		"key3",
+	)
+	is.False(ok)
+	is.EqualValues(slog.Attr{}, attr)
+
+	// nested not found
+	attr, ok = FindAttribute(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.Group("key1", slog.Any("key3", "value3")),
+		},
+		[]string{"key4"},
+		"key1",
+	)
+	is.False(ok)
+	is.EqualValues(slog.Attr{}, attr)
+}
