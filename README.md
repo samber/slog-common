@@ -10,6 +10,8 @@
 [![Contributors](https://img.shields.io/github/contributors/samber/slog-common)](https://github.com/samber/slog-common/graphs/contributors)
 [![License](https://img.shields.io/github/license/samber/slog-common)](./LICENSE)
 
+![gif-nothing-to-see-meme](https://media.giphy.com/media/xUStFKHmuFPYk/giphy.gif)
+
 A toolchain for [slog](https://pkg.go.dev/log/slog) Go library.
 
 This project gathers common functions for my [slog](https://pkg.go.dev/log/slog) Go libraries:
