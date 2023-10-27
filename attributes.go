@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -16,8 +17,7 @@ import (
 type ReplaceAttrFn = func(groups []string, a slog.Attr) slog.Attr
 
 func AppendRecordAttrsToAttrs(attrs []slog.Attr, groups []string, record *slog.Record) []slog.Attr {
-	// nolint:staticcheck
-	output := append(attrs) // copy
+	output := slices.Clone(attrs)
 
 	groups = reverse(groups)
 	record.Attrs(func(attr slog.Attr) bool {
