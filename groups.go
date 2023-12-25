@@ -2,11 +2,14 @@ package slogcommon
 
 import (
 	"log/slog"
+	"slices"
 
 	"github.com/samber/lo"
 )
 
 func AppendAttrsToGroup(groups []string, actualAttrs []slog.Attr, newAttrs ...slog.Attr) []slog.Attr {
+	actualAttrs = slices.Clone(actualAttrs)
+
 	if len(groups) == 0 {
 		return UniqAttrs(append(actualAttrs, newAttrs...))
 	}
