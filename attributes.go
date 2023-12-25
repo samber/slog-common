@@ -192,6 +192,22 @@ func ReplaceError(attrs []slog.Attr, errorKeys ...string) []slog.Attr {
 	return ReplaceAttrs(replaceAttr, []string{}, attrs...)
 }
 
+func ExtractError(attrs []slog.Attr, errorKeys ...string) ([]slog.Attr, error) {
+	for i := range attrs {
+		attr := attrs[i]
+
+		if !slices.Contains(errorKeys, attr.Key) {
+			continue
+		}
+
+		if err, ok := attr.Value.Resolve().Any().(error); ok {
+			return append(attrs[:i], attrs[i+1:]...), err
+		}
+	}
+
+	return attrs, nil
+}
+
 func FormatErrorKey(values map[string]any, errorKeys ...string) map[string]any {
 	for _, errorKey := range errorKeys {
 		if err, ok := values[errorKey]; ok {

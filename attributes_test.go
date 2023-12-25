@@ -222,3 +222,86 @@ func TestFindAttribute(t *testing.T) {
 	is.False(ok)
 	is.EqualValues(slog.Attr{}, attr)
 }
+
+func TestExtractError(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// not found
+	attrs, err := ExtractError(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("foo", "bar"),
+		},
+		"kerrorey1",
+	)
+	is.Len(attrs, 3)
+	is.Nil(err)
+
+	// found key but wrong type
+	attrs, err = ExtractError(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("error", "bar"),
+		},
+		"error",
+	)
+	is.Len(attrs, 3)
+	is.Nil(err)
+
+	// found start first key
+	attrs, err = ExtractError(
+		[]slog.Attr{
+			slog.Any("error", assert.AnError),
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("foo", "bar"),
+		},
+		"error",
+		"err",
+	)
+	is.Len(attrs, 3)
+	is.EqualError(err, assert.AnError.Error())
+
+	// found start second key
+	attrs, err = ExtractError(
+		[]slog.Attr{
+			slog.Any("err", assert.AnError),
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("foo", "bar"),
+		},
+		"error",
+		"err",
+	)
+	is.Len(attrs, 3)
+	is.EqualError(err, assert.AnError.Error())
+
+	// found middle
+	attrs, err = ExtractError(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Any("error", assert.AnError),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("foo", "bar"),
+		},
+		"error",
+	)
+	is.Len(attrs, 3)
+	is.EqualError(err, assert.AnError.Error())
+
+	// found end
+	attrs, err = ExtractError(
+		[]slog.Attr{
+			slog.Any("key", "value"),
+			slog.Group("key1", slog.Any("key2", "value2")),
+			slog.String("foo", "bar"),
+			slog.Any("error", assert.AnError),
+		},
+		"error",
+	)
+	is.Len(attrs, 3)
+	is.EqualError(err, assert.AnError.Error())
+}
