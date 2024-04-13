@@ -32,16 +32,12 @@ func AppendRecordAttrsToAttrs(attrs []slog.Attr, groups []string, record *slog.R
 }
 
 func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.Attr {
-	if fn == nil {
-		return attrs
-	}
-
 	for i := range attrs {
 		attr := attrs[i]
 		value := attr.Value.Resolve()
 		if value.Kind() == slog.KindGroup {
-			attr.Value = slog.GroupValue(ReplaceAttrs(fn, append(groups, attr.Key), value.Group()...)...)
-		} else {
+			attrs[i].Value = slog.GroupValue(ReplaceAttrs(fn, append(groups, attr.Key), value.Group()...)...)
+		} else if fn != nil {
 			attrs[i] = fn(groups, attr)
 		}
 	}

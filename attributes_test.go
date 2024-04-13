@@ -7,6 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type testLogValuer struct {
+	name string
+	pass string
+}
+
+func (t testLogValuer) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("name", t.name),
+		slog.String("password", "********"),
+	)
+}
+
+var stubLogValuer = testLogValuer{"userName", "password"}
+
 func TestReplaceAttrs(t *testing.T) {
 	t.Parallel()
 	is := assert.New(t)
@@ -18,6 +32,29 @@ func TestReplaceAttrs(t *testing.T) {
 			nil,
 			[]string{"foobar"},
 			slog.Bool("bool", true), slog.Int("int", 42),
+		),
+	)
+
+	// no ReplaceAttr func, but convert struct with interface slog.LogValue in slog.Group
+	is.Equal(
+		[]slog.Attr{slog.Group("user", slog.String("name", stubLogValuer.name), slog.String("password", "********"))},
+		ReplaceAttrs(
+			nil,
+			[]string{"foobar"},
+			slog.Any("user", stubLogValuer),
+		),
+	)
+
+	// ReplaceAttr func, but convert struct with interface slog.LogValue in slog.Group
+	is.Equal(
+		[]slog.Attr{slog.Group("user", slog.String("name", stubLogValuer.name), slog.String("password", "********"))},
+		ReplaceAttrs(
+			func(groups []string, a slog.Attr) slog.Attr {
+				is.Equal([]string{"foobar", "user"}, groups)
+				return a
+			},
+			[]string{"foobar"},
+			slog.Any("user", stubLogValuer),
 		),
 	)
 
