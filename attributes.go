@@ -254,14 +254,18 @@ func FormatRequest(req *http.Request, ignoreHeaders bool) map[string]any {
 func Source(sourceKey string, r *slog.Record) slog.Attr {
 	fs := runtime.CallersFrames([]uintptr{r.PC})
 	f, _ := fs.Next()
-	return slog.Any(
-		sourceKey,
-		&slog.Source{
-			Function: f.Function,
-			File:     f.File,
-			Line:     f.Line,
-		},
-	)
+	var args []any
+	if f.Function != "" {
+		args = append(args, slog.String("function", f.Function))
+	}
+	if f.File != "" {
+		args = append(args, slog.String("file", f.File))
+	}
+	if f.Line != 0 {
+		args = append(args, slog.Int("line", f.Line))
+	}
+
+	return slog.Group(sourceKey, args...)
 }
 
 func StringSource(sourceKey string, r *slog.Record) slog.Attr {
