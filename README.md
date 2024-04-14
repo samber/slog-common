@@ -23,6 +23,7 @@ This project gathers common functions for my [slog](https://pkg.go.dev/log/slog)
 - [slog-echo](https://github.com/samber/slog-echo): Echo middleware for `slog` logger
 - [slog-fiber](https://github.com/samber/slog-fiber): Fiber middleware for `slog` logger
 - [slog-chi](https://github.com/samber/slog-chi): Chi middleware for `slog` logger
+- [slog-http](https://github.com/samber/slog-http): `net/http` middleware for `slog` logger
 - [slog-datadog](https://github.com/samber/slog-datadog): A `slog` handler for `Datadog`
 - [slog-rollbar](https://github.com/samber/slog-rollbar): A `slog` handler for `Rollbar`
 - [slog-sentry](https://github.com/samber/slog-sentry): A `slog` handler for `Sentry`
@@ -37,10 +38,12 @@ This project gathers common functions for my [slog](https://pkg.go.dev/log/slog)
 - [slog-microsoft-teams](https://github.com/samber/slog-microsoft-teams): A `slog` handler for `Microsoft Teams`
 - [slog-webhook](https://github.com/samber/slog-webhook): A `slog` handler for `Webhook`
 - [slog-kafka](https://github.com/samber/slog-kafka): A `slog` handler for `Kafka`
+- [slog-nats](https://github.com/samber/slog-nats): A `slog` handler for `NATS`
 - [slog-parquet](https://github.com/samber/slog-parquet): A `slog` handler for `Parquet` + `Object Storage`
 - [slog-zap](https://github.com/samber/slog-zap): A `slog` handler for `Zap`
 - [slog-zerolog](https://github.com/samber/slog-zerolog): A `slog` handler for `Zerolog`
 - [slog-logrus](https://github.com/samber/slog-logrus): A `slog` handler for `Logrus`
+- [slog-channel](https://github.com/samber/slog-channel): A `slog` handler for Go channels
 
 ## 🤝 Contributing
 
