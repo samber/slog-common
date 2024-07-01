@@ -354,6 +354,12 @@ func TestRemoveEmptyAttrs(t *testing.T) {
 			[]slog.Attr{slog.Bool("bool", true), slog.Int("int", 42)},
 		),
 	)
+	is.Equal(
+		[]slog.Attr{slog.Bool("bool", false), slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Bool("bool", false), slog.Int("int", 42)},
+		),
+	)
 
 	// remove if missing keys
 	is.Equal(
