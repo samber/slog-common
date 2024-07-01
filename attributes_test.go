@@ -342,3 +342,52 @@ func TestExtractError(t *testing.T) {
 	is.Len(attrs, 3)
 	is.EqualError(err, assert.AnError.Error())
 }
+
+func TestRemoveEmptyAttrs(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// do not remove anything
+	is.Equal(
+		[]slog.Attr{slog.Bool("bool", true), slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Bool("bool", true), slog.Int("int", 42)},
+		),
+	)
+
+	// remove if missing keys
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Bool("", true), slog.Int("int", 42)},
+		),
+	)
+
+	// remove if missing value
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Any("test", nil), slog.Int("int", 42)},
+		),
+	)
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Group("test"), slog.Int("int", 42)},
+		),
+	)
+
+	// remove nested
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Any("test", nil), slog.Int("int", 42)},
+		),
+	)
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Group("test", slog.Any("foobar", nil)), slog.Int("int", 42)},
+		),
+	)
+}
