@@ -19,7 +19,7 @@ type ReplaceAttrFn = func(groups []string, a slog.Attr) slog.Attr
 func AppendRecordAttrsToAttrs(attrs []slog.Attr, groups []string, record *slog.Record) []slog.Attr {
 	output := slices.Clone(attrs)
 
-	groups = reverse(groups)
+	slices.Reverse(groups)
 	record.Attrs(func(attr slog.Attr) bool {
 		for i := range groups {
 			attr = slog.Group(groups[i], attr)
