@@ -2,10 +2,40 @@ package slogcommon
 
 import (
 	"log/slog"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSource(t *testing.T) {
+	// Simulate a runtime frame
+	pc, file, _, _ := runtime.Caller(0)
+	record := &slog.Record{PC: pc}
+
+	// Call the source function
+	attr := Source("sourceKey", record)
+
+	// Assert the attributes
+	assert.Equal(t, "sourceKey", attr.Key)
+	assert.Equal(t, slog.KindGroup, attr.Value.Kind())
+
+	groupAttrs := attr.Value.Group()
+
+	expectedAttrs := map[string]any{
+		"function": "github.com/samber/slog-common.TestSource",
+		"file":     file,
+		"line":     int64(14),
+	}
+
+	for _, a := range groupAttrs {
+		expectedValue, ok := expectedAttrs[a.Key]
+		if assert.True(t, ok, "unexpected attribute key: %s", a.Key) {
+			assert.Equal(t, expectedValue, a.Value.Any())
+		}
+	}
+}
 
 type testLogValuer struct {
 	name string
@@ -396,4 +426,104 @@ func TestRemoveEmptyAttrs(t *testing.T) {
 			[]slog.Attr{slog.Group("test", slog.Any("foobar", nil)), slog.Int("int", 42)},
 		),
 	)
+}
+
+type textMarshalerExample struct {
+	Data string
+}
+
+func (t textMarshalerExample) MarshalText() (text []byte, err error) {
+	return []byte(t.Data), nil
+}
+
+type nonTextMarshalerExample struct {
+	Data string
+}
+
+func TestAnyValueToString(t *testing.T) {
+	tests := map[string]struct {
+		input    slog.Attr
+		expected string
+	}{
+		"TextMarshaler implementation": {
+			input:    slog.Any("key", textMarshalerExample{Data: "example"}),
+			expected: "example",
+		},
+		"Non-TextMarshaler implementation": {
+			input:    slog.Any("key", nonTextMarshalerExample{Data: "example"}),
+			expected: "{Data:example}",
+		},
+		"String value": {
+			input:    slog.String("key", "example string"),
+			expected: "example string",
+		},
+		"Integer value": {
+			input:    slog.Int("key", 42),
+			expected: "42",
+		},
+		"Boolean value": {
+			input:    slog.Bool("key", true),
+			expected: "true",
+		},
+		"Nil value": {
+			input:    slog.Any("key", nil),
+			expected: "<nil>",
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			output := AnyValueToString(tt.input.Value)
+			if output != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, output)
+			}
+		})
+	}
+}
+
+func TestValueToString(t *testing.T) {
+	tests := map[string]struct {
+		input    slog.Attr
+		expected string
+	}{
+		"KindInt64": {
+			input:    slog.Int64("key", 42),
+			expected: "42",
+		},
+		"KindUint64": {
+			input:    slog.Uint64("key", 42),
+			expected: "42",
+		},
+		"KindFloat64": {
+			input:    slog.Float64("key", 3.14),
+			expected: "3.140000",
+		},
+		"KindString": {
+			input:    slog.String("key", "test"),
+			expected: "test",
+		},
+		"KindBool": {
+			input:    slog.Bool("key", true),
+			expected: "true",
+		},
+		"KindDuration": {
+			input:    slog.Duration("key", time.Second*42),
+			expected: "42s",
+		},
+		"KindTime": {
+			input:    slog.Time("key", time.Date(2023, time.July, 30, 12, 0, 0, 0, time.UTC)),
+			expected: "2023-07-30 12:00:00 +0000 UTC",
+		},
+		"KindAny": {
+			input:    slog.Any("key", "any value"),
+			expected: "any value",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			actual := ValueToString(tc.input.Value)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
