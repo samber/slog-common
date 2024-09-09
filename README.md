@@ -36,6 +36,7 @@ This project gathers common functions for my [slog](https://pkg.go.dev/log/slog)
 - [slog-multi](https://github.com/samber/slog-multi): `slog.Handler` chaining, fanout, routing, failover, load balancing...
 - [slog-formatter](https://github.com/samber/slog-formatter): `slog` attribute formatting
 - [slog-sampling](https://github.com/samber/slog-sampling): `slog` sampling policy
+- [slog-mock](https://github.com/samber/slog-mock): `slog.Handler` for test purposes
 
 **HTTP middlewares:**
 
