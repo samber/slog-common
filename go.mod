@@ -3,9 +3,9 @@ module github.com/samber/slog-common
 go 1.21
 
 require (
-	github.com/samber/lo v1.44.0
+	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.8.0
-	go.uber.org/goleak v1.2.1
+	go.uber.org/goleak v1.3.0
 )
 
 require (
