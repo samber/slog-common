@@ -133,7 +133,7 @@ func AnyValueToString(v slog.Value) string {
 }
 
 func AttrsToString(attrs ...slog.Attr) map[string]string {
-	output := map[string]string{}
+	output := make(map[string]string, len(attrs))
 
 	for i := range attrs {
 		attr := attrs[i]
@@ -198,7 +198,10 @@ func ExtractError(attrs []slog.Attr, errorKeys ...string) ([]slog.Attr, error) {
 		}
 
 		if err, ok := attr.Value.Resolve().Any().(error); ok {
-			return append(attrs[:i], attrs[i+1:]...), err
+			output := make([]slog.Attr, 0, len(attrs)-1)
+			output = append(output, attrs[:i]...)
+			output = append(output, attrs[i+1:]...)
+			return output, err
 		}
 	}
 

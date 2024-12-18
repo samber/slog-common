@@ -37,6 +37,33 @@ func TestSource(t *testing.T) {
 	}
 }
 
+func TestAppendRecordAttrsToAttrs(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	a := slog.String("a", "1")
+	b := slog.Int("b", 2)
+	c := slog.Bool("c", true)
+	d := slog.Float64("d", 3.14)
+	e := slog.Duration("e", time.Second)
+	r := slog.NewRecord(time.Now(), slog.LevelError, assert.AnError.Error(), 0)
+	r.AddAttrs(d, e)
+
+	output := AppendRecordAttrsToAttrs([]slog.Attr{a, b, c}, []string{}, &r)
+	is.Len(output, 5)
+	is.Equal([]slog.Attr{a, b, c, d, e}, output)
+
+	output = AppendRecordAttrsToAttrs([]slog.Attr{a, b, c}, []string{"foo", "bar"}, &r)
+	is.Len(output, 5)
+	is.Equal([]slog.Attr{a, b, c, slog.Group("foo", slog.Group("bar", d)), slog.Group("foo", slog.Group("bar", e))}, output)
+
+	r = slog.NewRecord(time.Now(), slog.LevelError, assert.AnError.Error(), 0)
+
+	output = AppendRecordAttrsToAttrs([]slog.Attr{a, b, c}, []string{}, &r)
+	is.Len(output, 3)
+	is.Equal([]slog.Attr{a, b, c}, output)
+}
+
 type testLogValuer struct {
 	name string
 	pass string
