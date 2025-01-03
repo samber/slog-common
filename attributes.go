@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/samber/lo"
@@ -20,9 +19,8 @@ func AppendRecordAttrsToAttrs(attrs []slog.Attr, groups []string, record *slog.R
 	output := make([]slog.Attr, 0, len(attrs)+record.NumAttrs())
 	output = append(output, attrs...)
 
-	slices.Reverse(groups)
 	record.Attrs(func(attr slog.Attr) bool {
-		for i := range groups {
+		for i := len(groups) - 1; i >= 0; i-- {
 			attr = slog.Group(groups[i], attr)
 		}
 		output = append(output, attr)
@@ -146,24 +144,10 @@ func AttrsToString(attrs ...slog.Attr) map[string]string {
 
 func ValueToString(v slog.Value) string {
 	switch v.Kind() {
-	case slog.KindAny:
+	case slog.KindAny, slog.KindLogValuer, slog.KindGroup:
 		return AnyValueToString(v)
-	case slog.KindLogValuer:
-		return AnyValueToString(v)
-	case slog.KindGroup:
-		return AnyValueToString(v)
-	case slog.KindInt64:
-		return fmt.Sprintf("%d", v.Int64())
-	case slog.KindUint64:
-		return fmt.Sprintf("%d", v.Uint64())
-	case slog.KindFloat64:
-		return fmt.Sprintf("%f", v.Float64())
-	case slog.KindString:
+	case slog.KindInt64, slog.KindUint64, slog.KindFloat64, slog.KindString, slog.KindBool, slog.KindDuration:
 		return v.String()
-	case slog.KindBool:
-		return strconv.FormatBool(v.Bool())
-	case slog.KindDuration:
-		return v.Duration().String()
 	case slog.KindTime:
 		return v.Time().UTC().String()
 	default:
