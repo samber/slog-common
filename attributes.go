@@ -298,21 +298,28 @@ func FindAttribute(attrs []slog.Attr, groups []string, key string) (slog.Attr, b
 }
 
 func RemoveEmptyAttrs(attrs []slog.Attr) []slog.Attr {
-	return lo.FilterMap(attrs, func(attr slog.Attr, _ int) (slog.Attr, bool) {
-		if attr.Key == "" {
-			return attr, false
-		}
+	return lo.FlatMap(attrs, func(attr slog.Attr, _ int) []slog.Attr {
+		if attr.Key != "" {
+			if attr.Value.Kind() == slog.KindGroup {
+				values := RemoveEmptyAttrs(attr.Value.Group())
+				if len(values) == 0 {
+					return nil
+				}
 
-		if attr.Value.Kind() == slog.KindGroup {
-			values := RemoveEmptyAttrs(attr.Value.Group())
-			if len(values) == 0 {
-				return attr, false
+				attr.Value = slog.GroupValue(values...)
 			}
 
-			attr.Value = slog.GroupValue(values...)
-			return attr, true
+			if attr.Value.Equal(slog.Value{}) {
+				return nil
+			}
+
+			return []slog.Attr{attr}
 		}
 
-		return attr, !attr.Value.Equal(slog.Value{})
+		if attr.Value.Kind() != slog.KindGroup {
+			return nil
+		}
+
+		return RemoveEmptyAttrs(attr.Value.Group())
 	})
 }

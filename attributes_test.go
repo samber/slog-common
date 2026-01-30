@@ -453,6 +453,20 @@ func TestRemoveEmptyAttrs(t *testing.T) {
 			[]slog.Attr{slog.Group("test", slog.Any("foobar", nil)), slog.Int("int", 42)},
 		),
 	)
+	is.Equal(
+		[]slog.Attr{slog.Group("test", slog.Int("int", 42))},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Group("test", slog.Int("int", 42), slog.Any("foobar", nil))},
+		),
+	)
+
+	// do not remove empty group name with non-empty values
+	is.Equal(
+		[]slog.Attr{slog.Int("int", 42)},
+		RemoveEmptyAttrs(
+			[]slog.Attr{slog.Group("", slog.Int("int", 42))},
+		),
+	)
 }
 
 type textMarshalerExample struct {
