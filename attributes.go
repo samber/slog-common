@@ -38,6 +38,8 @@ func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.
 			attrs[i].Value = slog.GroupValue(ReplaceAttrs(fn, append(groups, attr.Key), value.Group()...)...)
 		} else if fn != nil {
 			attrs[i] = fn(groups, attr)
+		} else {
+			attrs[i].Value = value
 		}
 	}
 

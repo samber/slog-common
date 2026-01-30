@@ -78,6 +78,12 @@ func (t testLogValuer) LogValue() slog.Value {
 
 var stubLogValuer = testLogValuer{"userName", "password"}
 
+type testMaskedLogValuer string
+
+func (t testMaskedLogValuer) LogValue() slog.Value {
+	return slog.StringValue("********") // LogValue does not always return GroupValue
+}
+
 func TestReplaceAttrs(t *testing.T) {
 	t.Parallel()
 	is := assert.New(t)
@@ -99,6 +105,14 @@ func TestReplaceAttrs(t *testing.T) {
 			nil,
 			[]string{"foobar"},
 			slog.Any("user", stubLogValuer),
+		),
+	)
+	is.Equal(
+		[]slog.Attr{slog.String("password", "********")},
+		ReplaceAttrs(
+			nil,
+			[]string{"foobar"},
+			slog.Any("password", testMaskedLogValuer("password")),
 		),
 	)
 
