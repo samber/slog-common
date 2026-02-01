@@ -414,6 +414,35 @@ func TestExtractError(t *testing.T) {
 	is.EqualError(err, assert.AnError.Error())
 }
 
+type testError struct {
+}
+
+func (t testError) Error() string {
+	return "test error"
+}
+
+func (t testError) LogValue() slog.Value {
+	return slog.StringValue("an error")
+}
+
+func TestFormatError(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// not found
+	attrs := FormatError(assert.AnError)
+	is.Len(attrs, 3)
+	is.Equal(map[string]any{
+		"kind":  "*errors.errorString",
+		"error": assert.AnError.Error(),
+		"stack": nil,
+	}, attrs)
+
+	// not found
+	attrs = FormatError(&testError{})
+	is.Equal(slog.StringValue("an error"), attrs)
+}
+
 func TestRemoveEmptyAttrs(t *testing.T) {
 	t.Parallel()
 	is := assert.New(t)

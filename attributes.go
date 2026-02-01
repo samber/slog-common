@@ -217,7 +217,11 @@ func FormatErrorKey(values map[string]any, errorKeys ...string) map[string]any {
 	return values
 }
 
-func FormatError(err error) map[string]any {
+func FormatError(err error) any {
+	if e, ok := err.(slog.LogValuer); ok {
+		return e.LogValue()
+	}
+
 	return map[string]any{
 		"kind":  reflect.TypeOf(err).String(),
 		"error": err.Error(),
