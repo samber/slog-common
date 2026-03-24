@@ -63,3 +63,35 @@ func TestContextExtractor(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractFromContext(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// ExtractFromContext expects keys that are type-assertable to string
+	ctx := context.WithValue(context.Background(), "userID", "1234")
+	ctx = context.WithValue(ctx, "requestID", "req-567")
+
+	// Single key
+	fn := ExtractFromContext("userID")
+	attrs := fn(ctx)
+	is.Len(attrs, 1)
+	is.Equal("userID", attrs[0].Key)
+	is.Equal("1234", attrs[0].Value.Any())
+
+	// Multiple keys
+	fn = ExtractFromContext("userID", "requestID")
+	attrs = fn(ctx)
+	is.Len(attrs, 2)
+	is.Equal("userID", attrs[0].Key)
+	is.Equal("1234", attrs[0].Value.Any())
+	is.Equal("requestID", attrs[1].Key)
+	is.Equal("req-567", attrs[1].Value.Any())
+
+	// Missing key returns nil value
+	fn = ExtractFromContext("missing")
+	attrs = fn(ctx)
+	is.Len(attrs, 1)
+	is.Equal("missing", attrs[0].Key)
+	is.Nil(attrs[0].Value.Any())
+}

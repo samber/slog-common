@@ -11,6 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         go:
           - '1.21'
@@ -31,7 +32,11 @@ jobs:
     - name: Test
       run: make test
 
-    - name: Test
+    - name: Fuzz
+      run: make fuzz
+      if: matrix.go == '1.21'
+
+    - name: Coverage
       run: make coverage
 
     - name: Codecov

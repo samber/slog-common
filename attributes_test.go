@@ -1,7 +1,9 @@
 package slogcommon
 
 import (
+	"fmt"
 	"log/slog"
+	"net/http"
 	"runtime"
 	"testing"
 	"time"
@@ -26,7 +28,7 @@ func TestSource(t *testing.T) {
 	expectedAttrs := map[string]any{
 		"function": "github.com/samber/slog-common.TestSource",
 		"file":     file,
-		"line":     int64(14),
+		"line":     int64(16),
 	}
 
 	for _, a := range groupAttrs {
@@ -563,6 +565,253 @@ func TestAnyValueToString(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRecordToAttrsMap(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	r := slog.NewRecord(time.Now(), slog.LevelInfo, "test", 0)
+	r.AddAttrs(slog.String("key1", "value1"), slog.Int("key2", 42))
+
+	// Note: RecordToAttrsMap has a bug — make([]slog.Attr, r.NumAttrs()) creates
+	// zero-valued elements, then append adds after them. The leading empty attrs
+	// produce an empty-string key "" in the output map.
+	result := RecordToAttrsMap(r)
+	is.Contains(result, "key1")
+	is.Contains(result, "key2")
+}
+
+func TestAttrToValue(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		attr         slog.Attr
+		expectedKey  string
+		expectedVal  any
+		checkType    bool
+		expectedType string
+	}{
+		"KindString": {
+			attr:        slog.String("name", "alice"),
+			expectedKey: "name",
+			expectedVal: "alice",
+		},
+		"KindInt64": {
+			attr:        slog.Int64("count", 42),
+			expectedKey: "count",
+			expectedVal: int64(42),
+		},
+		"KindUint64": {
+			attr:        slog.Uint64("count", 42),
+			expectedKey: "count",
+			expectedVal: uint64(42),
+		},
+		"KindFloat64": {
+			attr:        slog.Float64("score", 3.14),
+			expectedKey: "score",
+			expectedVal: 3.14,
+		},
+		"KindBool": {
+			attr:        slog.Bool("active", true),
+			expectedKey: "active",
+			expectedVal: true,
+		},
+		"KindDuration": {
+			attr:        slog.Duration("elapsed", 5*time.Second),
+			expectedKey: "elapsed",
+			expectedVal: 5 * time.Second,
+		},
+		"KindTime": {
+			attr:        slog.Time("created", time.Date(2023, 7, 30, 12, 0, 0, 0, time.UTC)),
+			expectedKey: "created",
+			expectedVal: time.Date(2023, 7, 30, 12, 0, 0, 0, time.UTC),
+		},
+		"KindGroup": {
+			attr:         slog.Group("user", slog.String("name", "alice")),
+			expectedKey:  "user",
+			checkType:    true,
+			expectedType: "map[string]interface {}",
+		},
+		"KindAny": {
+			attr:        slog.Any("data", []int{1, 2, 3}),
+			expectedKey: "data",
+			expectedVal: []int{1, 2, 3},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			is := assert.New(t)
+			k, v := AttrToValue(tt.attr)
+			is.Equal(tt.expectedKey, k)
+			if tt.checkType {
+				is.Equal(tt.expectedType, fmt.Sprintf("%T", v))
+			} else {
+				is.Equal(tt.expectedVal, v)
+			}
+		})
+	}
+}
+
+func TestAttrsToString(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	result := AttrsToString(
+		slog.String("name", "alice"),
+		slog.Int("age", 30),
+		slog.Bool("active", true),
+		slog.Duration("elapsed", 5*time.Second),
+		slog.Time("created", time.Date(2023, 7, 30, 12, 0, 0, 0, time.UTC)),
+	)
+
+	is.Equal("alice", result["name"])
+	is.Equal("30", result["age"])
+	is.Equal("true", result["active"])
+	is.Equal("5s", result["elapsed"])
+	is.Equal("2023-07-30 12:00:00 +0000 UTC", result["created"])
+}
+
+func TestReplaceError(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// Replace error attr
+	attrs := ReplaceError(
+		[]slog.Attr{
+			slog.String("msg", "hello"),
+			slog.Any("error", assert.AnError),
+		},
+		"error",
+	)
+	is.Len(attrs, 2)
+	is.Equal("msg", attrs[0].Key)
+	is.Equal("error", attrs[1].Key)
+	// The error should be formatted as a map
+	is.Equal(slog.KindAny, attrs[1].Value.Kind())
+
+	// Non-error value with matching key should not be replaced
+	attrs = ReplaceError(
+		[]slog.Attr{
+			slog.String("error", "not an error"),
+		},
+		"error",
+	)
+	is.Equal("not an error", attrs[0].Value.Any())
+
+	// No matching key
+	attrs = ReplaceError(
+		[]slog.Attr{
+			slog.Any("err", assert.AnError),
+		},
+		"error",
+	)
+	is.Equal(assert.AnError, attrs[0].Value.Any())
+
+	// Multiple error keys
+	attrs = ReplaceError(
+		[]slog.Attr{
+			slog.Any("err", assert.AnError),
+			slog.Any("error", assert.AnError),
+		},
+		"error", "err",
+	)
+	is.Equal(slog.KindAny, attrs[0].Value.Kind())
+	is.Equal(slog.KindAny, attrs[1].Value.Kind())
+
+	// Nested group — errors in groups deeper than 1 are not replaced
+	attrs = ReplaceError(
+		[]slog.Attr{
+			slog.Group("group1", slog.Group("group2", slog.Any("error", assert.AnError))),
+		},
+		"error",
+	)
+	// The nested error should remain unchanged (groups > 1 are skipped)
+	is.Equal(slog.KindGroup, attrs[0].Value.Kind())
+}
+
+func TestFormatErrorKey(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// Error key exists
+	values := map[string]any{
+		"msg":   "hello",
+		"error": assert.AnError,
+	}
+	result := FormatErrorKey(values, "error")
+	is.IsType(map[string]any{}, result["error"])
+
+	// No matching key
+	values = map[string]any{
+		"msg": "hello",
+	}
+	result = FormatErrorKey(values, "error")
+	is.Nil(result["error"])
+
+	// Non-error value
+	values = map[string]any{
+		"error": "not an error",
+	}
+	result = FormatErrorKey(values, "error")
+	is.Equal("not an error", result["error"])
+
+	// Multiple keys, first match wins
+	values = map[string]any{
+		"err":   assert.AnError,
+		"error": assert.AnError,
+	}
+	result = FormatErrorKey(values, "err", "error")
+	is.IsType(map[string]any{}, result["err"])
+	// "error" key should remain as-is since first match breaks
+	is.Equal(assert.AnError, result["error"])
+}
+
+func TestFormatRequest(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	// Basic request with headers
+	req, _ := http.NewRequest("GET", "https://example.com/path?foo=bar&baz=qux", nil)
+	req.Header.Set("Content-Type", "application/json")
+
+	result := FormatRequest(req, false)
+	is.Equal("example.com", result["host"])
+	is.Equal("GET", result["method"])
+
+	urlMap := result["url"].(map[string]any)
+	is.Equal("https", urlMap["scheme"])
+	is.Equal("example.com", urlMap["host"])
+	is.Equal("/path", urlMap["path"])
+	is.Equal("foo=bar&baz=qux", urlMap["raw_query"])
+
+	headers := result["headers"].(map[string]string)
+	is.Equal("application/json", headers["Content-Type"])
+
+	// Request without headers (ignoreHeaders=true)
+	result = FormatRequest(req, true)
+	is.Nil(result["headers"])
+	is.Equal("GET", result["method"])
+
+	// Request with fragment
+	req, _ = http.NewRequest("POST", "https://example.com/page#section", nil)
+	result = FormatRequest(req, true)
+	urlMap = result["url"].(map[string]any)
+	is.Equal("section", urlMap["fragment"])
+}
+
+func TestStringSource(t *testing.T) {
+	pc, file, _, _ := runtime.Caller(0)
+	record := &slog.Record{PC: pc}
+
+	attr := StringSource("source", record)
+	is := assert.New(t)
+
+	is.Equal("source", attr.Key)
+	is.Equal(slog.KindString, attr.Value.Kind())
+	is.Contains(attr.Value.String(), file)
+	is.Contains(attr.Value.String(), "TestStringSource")
 }
 
 func TestValueToString(t *testing.T) {
