@@ -58,3 +58,37 @@ func TestAppendAttrsToGroup(t *testing.T) {
 		})
 	}
 }
+
+func TestUniqAttrs(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input    []slog.Attr
+		expected []slog.Attr
+	}{
+		"NoDuplicates": {
+			input:    []slog.Attr{slog.String("a", "1"), slog.Int("b", 2)},
+			expected: []slog.Attr{slog.String("a", "1"), slog.Int("b", 2)},
+		},
+		"WithDuplicates_KeepsLast": {
+			input:    []slog.Attr{slog.String("a", "first"), slog.Int("b", 2), slog.String("a", "last")},
+			expected: []slog.Attr{slog.String("a", "last"), slog.Int("b", 2)},
+		},
+		"Empty": {
+			input:    []slog.Attr{},
+			expected: []slog.Attr{},
+		},
+		"AllSameKey": {
+			input:    []slog.Attr{slog.String("a", "1"), slog.String("a", "2"), slog.String("a", "3")},
+			expected: []slog.Attr{slog.String("a", "3")},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			is := assert.New(t)
+			result := UniqAttrs(tt.input)
+			is.Equal(tt.expected, result)
+		})
+	}
+}
