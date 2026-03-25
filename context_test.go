@@ -43,7 +43,7 @@ func TestContextExtractor(t *testing.T) {
 			expected: []slog.Attr{slog.String("key1", "value1"), slog.String("key2", "value2")},
 		},
 		"FunctionWithContext": {
-			ctx: context.WithValue(context.Background(), ctxKey("userID"), "1234"),
+			ctx: context.WithValue(context.Background(), ctxKey("userID"), "1234"), //nolint:staticcheck
 			fns: []func(ctx context.Context) []slog.Attr{
 				func(ctx context.Context) []slog.Attr {
 					if userID, ok := ctx.Value(ctxKey("userID")).(string); ok {
@@ -69,8 +69,8 @@ func TestExtractFromContext(t *testing.T) {
 	is := assert.New(t)
 
 	// ExtractFromContext expects keys that are type-assertable to string
-	ctx := context.WithValue(context.Background(), "userID", "1234")
-	ctx = context.WithValue(ctx, "requestID", "req-567")
+	ctx := context.WithValue(context.Background(), "userID", "1234") //nolint:staticcheck
+	ctx = context.WithValue(ctx, "requestID", "req-567") //nolint:staticcheck
 
 	// Single key
 	fn := ExtractFromContext("userID")
