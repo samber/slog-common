@@ -571,15 +571,11 @@ func TestRecordToAttrsMap(t *testing.T) {
 	r := slog.NewRecord(time.Now(), slog.LevelInfo, "test", 0)
 	r.AddAttrs(slog.String("key1", "value1"), slog.Int("key2", 42))
 
-	// Note: RecordToAttrsMap has a bug — make([]slog.Attr, r.NumAttrs()) creates
-	// zero-valued elements, then append adds after them. The leading empty attrs
-	// produce an empty-string key "" in the output map.
 	result := RecordToAttrsMap(r)
 	is.Contains(result, "key1")
 	is.Contains(result, "key2")
-	// Regression guard: these will pass once the bug is fixed.
-	// is.Len(result, 2)
-	// is.NotContains(result, "")
+	is.Len(result, 2)
+	is.NotContains(result, "")
 }
 
 func TestAttrToValue(t *testing.T) {
