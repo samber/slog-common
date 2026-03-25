@@ -76,18 +76,23 @@ func TestFindAttrByGroupAndKey(t *testing.T) {
 			expected: slog.Attr{},
 			found:    false,
 		},
-		// Note: FindAttrByGroupAndKey has a bug on line 21 — it compares
-		// attrs[i].Key == key instead of attrs[i].Key == groups[0].
-		// The test below documents current (buggy) behavior and should be
-		// updated to expect found=true once the implementation is fixed.
-		"WithGroup_BuggyBehavior": {
+		"WithGroup_Found": {
 			attrs: []slog.Attr{
 				slog.Group("grp", slog.String("inner", "val")),
 			},
 			groups:   []string{"grp"},
 			key:      "inner",
+			expected: slog.String("inner", "val"),
+			found:    true,
+		},
+		"WithGroup_NotFound": {
+			attrs: []slog.Attr{
+				slog.Group("grp", slog.String("inner", "val")),
+			},
+			groups:   []string{"grp"},
+			key:      "missing",
 			expected: slog.Attr{},
-			found:    false, // should be true after bug fix
+			found:    false,
 		},
 	}
 
