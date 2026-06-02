@@ -6,7 +6,7 @@ import (
 )
 
 func ContextExtractor(ctx context.Context, fns []func(ctx context.Context) []slog.Attr) []slog.Attr {
-	attrs := []slog.Attr{}
+	attrs := make([]slog.Attr, 0, len(fns))
 	for _, fn := range fns {
 		attrs = append(attrs, fn(ctx)...)
 	}
