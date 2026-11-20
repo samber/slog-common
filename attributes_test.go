@@ -856,3 +856,22 @@ func TestValueToString(t *testing.T) {
 		})
 	}
 }
+
+func TestReplaceAttrsDoesNotMutateInputGroups(t *testing.T) {
+	t.Parallel()
+	is := assert.New(t)
+
+	group := slog.Group("req", slog.String("path", "/a"), slog.Group("inner", slog.String("id", "1")))
+	fn := func(_ []string, a slog.Attr) slog.Attr {
+		return slog.String(a.Key, a.Value.String()+"!")
+	}
+
+	// the same group is replaced on every record when it comes from logger.With(...)
+	for i := 0; i < 2; i++ {
+		got := ReplaceAttrs(fn, []string{}, group)
+		is.Len(got, 1)
+		is.Equal("req=[path=/a! inner=[id=1!]]", got[0].String())
+	}
+
+	is.Equal("req=[path=/a inner=[id=1]]", group.String())
+}

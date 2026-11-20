@@ -35,7 +35,11 @@ func ReplaceAttrs(fn ReplaceAttrFn, groups []string, attrs ...slog.Attr) []slog.
 		attr := attrs[i]
 		value := attr.Value.Resolve()
 		if value.Kind() == slog.KindGroup {
-			attrs[i].Value = slog.GroupValue(ReplaceAttrs(fn, append(groups, attr.Key), value.Group()...)...)
+			// Group() returns the slice owned by the value, which can be shared
+			// with a logger's stored attributes. Work on a copy so the caller's
+			// attributes are not rewritten on every record.
+			children := slices.Clone(value.Group())
+			attrs[i].Value = slog.GroupValue(ReplaceAttrs(fn, append(slices.Clip(groups), attr.Key), children...)...)
 		} else if fn != nil {
 			attrs[i] = fn(groups, attr)
 		} else {
